@@ -1,0 +1,92 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Constants
+g = 9.81  # Acceleration due to gravity (m/s^2)
+air_density = 1.225  # Air density at sea level (kg/m^3)
+drag_coefficient = 0.5  # Drag coefficient (dimensionless)
+rocket_radius = 0.1  # Rocket radius in meters
+rocket_mass_initial = 500  # Initial mass of the rocket (kg)
+thrust = 15000  # Thrust produced by the rocket (N)
+burn_rate = 2  # Fuel burn rate (kg/s)
+fuel_mass_initial = 200  # Initial fuel mass (kg)
+time_step = 0.1  # Time step for simulation (seconds)
+
+# Rocket properties
+rocket_area = np.pi * rocket_radius**2  # Cross-sectional area of the rocket (m^2)
+fuel_mass = fuel_mass_initial  # Mass of the fuel at the start
+
+# Initial conditions
+initial_velocity = 0  # Initial velocity (m/s)
+initial_height = 0  # Initial height (m)
+initial_mass = rocket_mass_initial + fuel_mass_initial  # Total initial mass (rocket + fuel)
+angle_of_launch = 45  # Launch angle (degrees)
+angle_rad = np.radians(angle_of_launch)  # Convert angle to radians
+
+# State variables
+time = 0
+height = initial_height
+velocity = initial_velocity
+mass = initial_mass
+position = np.array([height, velocity])  # 0 - height, 1 - velocity
+positions = [position]
+times = [time]
+
+# Simulation loop
+while height >= 0:
+    # Thrust decreases as fuel burns
+    if fuel_mass > 0:
+        thrust_actual = thrust
+        fuel_mass -= burn_rate * time_step  # Burn fuel
+    else:
+        thrust_actual = 0  # No thrust once fuel is gone
+    
+    # Calculate drag force
+    drag_force = 0.5 * air_density * velocity**2 * rocket_area * drag_coefficient
+    
+    # Net force and acceleration (considering gravity and drag)
+    weight = mass * g  # Weight of the rocket
+    net_force = thrust_actual - weight - drag_force  # Net force on the rocket
+    acceleration = net_force / mass  # F = ma => a = F/m
+    
+    # Update velocity and height
+    velocity += acceleration * time_step
+    height += velocity * time_step
+    
+    # Update mass (rocket mass decreases as fuel burns)
+    mass = rocket_mass_initial + max(0, fuel_mass)
+    
+    # Save the current state
+    time += time_step
+    positions.append([height, velocity])
+    times.append(time)
+    
+    # Stop if the rocket reaches the ground
+    if height <= 0:
+        break
+
+# Extract data
+heights = [pos[0] for pos in positions]
+velocities = [pos[1] for pos in positions]
+
+# Plot results
+plt.figure(figsize=(10, 5))
+
+# Plot height vs time
+plt.subplot(2, 1, 1)
+plt.plot(times, heights, label='Height (m)')
+plt.xlabel('Time (s)')
+plt.ylabel('Height (m)')
+plt.title('Rocket Height vs Time')
+plt.grid(True)
+
+# Plot velocity vs time
+plt.subplot(2, 1, 2)
+plt.plot(times, velocities, label='Velocity (m/s)', color='r')
+plt.xlabel('Time (s)')
+plt.ylabel('Velocity (m/s)')
+plt.title('Rocket Velocity vs Time')
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
